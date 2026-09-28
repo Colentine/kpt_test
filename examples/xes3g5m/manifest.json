@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "dataset": "xes3g5m",
+  "seed": 42,
+  "split_method": "provided",
+  "counts": {
+    "train": 1,
+    "valid": 1,
+    "test": 4
+  },
+  "taxonomy_sha256": "020536582ad1df3165bfd6f5a85e43dd240561d2897ea85d2d41e8edf0059831",
+  "source_sha256": "ceed5c1c2323e0b646d73d9604b1274a7a500683706d5328831891f83749889c",
+  "noise": {
+    "protocol": "sgpe_character_delete_then_adjacent_swap_v1",
+    "seed": 42,
+    "drop_probability": 0.35,
+    "swap_probability": 0.35,
+    "changed_questions": 4
+  },
+  "adapter": {
+    "removed_redundant_ancestor_tags": 0
+  },
+  "files": {
+    "train.jsonl": "0ccdf47697f0f00347eb116bf341c2a9ae01b7eadc8ba4a4c152179cf1cb4c89",
+    "valid.jsonl": "48caddf92f41a3d7af0d4ebfd10876261b94ec69da7ce4555725e16866d29b25",
+    "test.inputs.jsonl": "417f2001e86c8fdc968211013feb9ba4b85985dab3176ff43dcbf2aa6c20b98f",
+    "test.gold.jsonl": "cd148fb3c084e0656ce1928e5055b3659b65be8efce1a7fbfea7a4716a468dba",
+    "test.noisy.inputs.jsonl": "5c2d5f2361bfb546bb1cf2a3f0fa079a169c94521e79bbbef20702f01568a090",
+    "predictions.template.jsonl": "4a521e951309428c559cf1327657ba5033ff53341efb8a6260ddd282270be5ae",
+    "taxonomy.json": "d4cba21ef41493e991c1c58c8718b8e863de17afacc247151161227aab1dc348",
+    "splits.json": "afa631269b5e7bedd26f8425cb3c06ab099c02f464336ef75c1c9e2e13e61069"
+  }
+}

@@ -1,0 +1,4 @@
+numpy>=1.24,<3
+scipy>=1.10,<2
+# Only needed by the teacher to build semantic embeddings:
+# pip install ".[semantic]"

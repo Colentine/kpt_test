@@ -1,0 +1,30 @@
+[
+  {
+    "qid": 1,
+    "label_id": 101
+  },
+  {
+    "qid": 2,
+    "label_id": 102
+  },
+  {
+    "qid": 3,
+    "label_id": 101
+  },
+  {
+    "qid": 3,
+    "label_id": 102
+  },
+  {
+    "qid": 4,
+    "label_id": 103
+  },
+  {
+    "qid": 5,
+    "label_id": 104
+  },
+  {
+    "qid": 6,
+    "label_id": 105
+  }
+]

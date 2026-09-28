@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kpt-test"
+version = "1.0.0"
+description = "Reproducible knowledge-point prediction evaluation for DA-20K and XES3G5M"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24,<3", "scipy>=1.10,<2"]
+
+[project.optional-dependencies]
+semantic = ["sentence-transformers>=3,<6"]
+
+[project.scripts]
+kpt-test = "kpt_test.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["kpt_test*"]

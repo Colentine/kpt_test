@@ -1,0 +1,74 @@
+[
+  {
+    "id": "r",
+    "name": "数学",
+    "uuid": "r",
+    "parent_uuid": ""
+  },
+  {
+    "id": "g1",
+    "name": "代数",
+    "uuid": "g1",
+    "parent_uuid": "r"
+  },
+  {
+    "id": "g2",
+    "name": "几何与概率",
+    "uuid": "g2",
+    "parent_uuid": "r"
+  },
+  {
+    "id": "p1",
+    "name": "数列",
+    "uuid": "p1",
+    "parent_uuid": "g1"
+  },
+  {
+    "id": "p2",
+    "name": "方程",
+    "uuid": "p2",
+    "parent_uuid": "g1"
+  },
+  {
+    "id": "p3",
+    "name": "几何",
+    "uuid": "p3",
+    "parent_uuid": "g2"
+  },
+  {
+    "id": "p4",
+    "name": "概率",
+    "uuid": "p4",
+    "parent_uuid": "g2"
+  },
+  {
+    "id": 101,
+    "name": "等差数列",
+    "uuid": "101",
+    "parent_uuid": "p1"
+  },
+  {
+    "id": 102,
+    "name": "通项公式",
+    "uuid": "102",
+    "parent_uuid": "p1"
+  },
+  {
+    "id": 103,
+    "name": "一元一次方程",
+    "uuid": "103",
+    "parent_uuid": "p2"
+  },
+  {
+    "id": 104,
+    "name": "三角形面积",
+    "uuid": "104",
+    "parent_uuid": "p3"
+  },
+  {
+    "id": 105,
+    "name": "古典概型",
+    "uuid": "105",
+    "parent_uuid": "p4"
+  }
+]

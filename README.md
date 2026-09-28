@@ -1,12 +1,10 @@
 # 知识点预测评测
 
-支持 **DA-20K 和 XES3G5M**。你需要提供模型预测出的知识点，程序将它们与真实知识点对比，输出分数。
-
-整个流程是：**原始数据 → 程序生成待测题目 → 你的模型预测 → 程序评分**。下面按这个顺序操作。
+仓库已包含 **DA-20K 和 XES3G5M 的题目、真实知识点标签、固定划分及评分向量**。克隆后直接使用，无需另外下载数据或语义模型。预测只使用文本，包含题干、选项和公式，不使用图片。
 
 ## 第一步：安装
 
-需要 Python 3.10 或更新版本。在终端依次执行，后续命令都在 `kpt_test` 目录下运行：
+需要 Python 3.10 或更新版本。在终端依次执行：
 
 ```bash
 git clone https://github.com/Colentine/kpt_test.git
@@ -14,107 +12,85 @@ cd kpt_test
 python -m pip install -e .
 ```
 
-## 第二步：让程序生成待预测的题目
+后续操作都在 `kpt_test` 仓库目录下进行。
 
-选择对应数据集，先确认本机已有命令需要的输入文件。
+## 第二步：选择数据集，读取题目
 
-**DA-20K**：[数据下载](https://figshare.com/s/2be2eb2c06d00a9e4349) · [官方知识点标签表](https://github.com/xuqiang124/atmk_system/blob/master/DA-20k-labels-with-father.json)。
+下面的文件**已经在仓库中**。选择一个数据集，直接读取对应文件：
 
-本仓库不包含完整 DA-20K 数据。原先说明中的 `data/raw/da20k/questions.json` 是示意路径，不是确认过的下载文件名，也不会由程序自动生成。当前支持的题目 JSON 格式为：
-
-```json
-[{"id":1,"content":"题干文本","labels":[3,4]}]
-```
-
-请使用包含真实题目 ID、题干和知识点 ID 的文件；原始文件格式不一致时，需要先整理成上述格式。**原始下载包的结构尚未核验，目前没有提供从任意原始格式自动整理的脚本。** 具体来源、分表格式及可运行示例见[DA-20K 输入说明](docs/prepare_data.md#da-20k)。
-
-下面是命令模板，须将两个大写占位符替换为本机已有文件的路径：
-
-```bash
-python -m kpt_test prepare --dataset da20k --questions "YOUR_QUESTIONS_JSON" --labels "YOUR_LABELS_JSON" --output-dir data/test
-```
-
-**XES3G5M**：从[官方仓库](https://github.com/ai4ed/XES3G5M)下载并解压数据，将解压后的 `XES3G5M` 文件夹放到自己创建的 `data/raw` 目录中。下面两个 `metadata` 文件名来自官方说明：
-
-```bash
-python -m kpt_test prepare --dataset xes3g5m --questions data/raw/XES3G5M/metadata/questions.json --labels data/raw/XES3G5M/metadata/kc_routes_map.json --output-dir data/test
-```
-
-执行成功后，程序自动创建 `data/test` 文件夹并写入以下文件。**这些文件由程序生成，你只需保留它们。**
-
-| 生成的文件 | 里面是什么 | 用来做什么 |
+| 用途 | DA-20K | XES3G5M |
 | --- | --- | --- |
-| `test.inputs.jsonl` | 原始测试题目的 ID 和题干 | 交给你的模型预测知识点 |
-| `test.noisy.inputs.jsonl` | 同一批题目，随机删字或交换相邻字符 | 再预测一次，检查模型能否容忍输入错误 |
-| `test.gold.jsonl` | 每道测试题真正对应的知识点 ID | 评分程序用来核对预测，不作为模型输入 |
-| `taxonomy.json` | 所有允许预测的知识点 ID、名称和层级 | 确认模型输出的标签 ID |
-| `train.jsonl` / `valid.jsonl` | 带知识点标签的训练题 / 验证题 | 训练或调整模型时使用 |
-| 其他文件 | 预测模板、题目划分和文件校验信息 | 保留原样，供程序使用 |
+| 原始测试题目 | [test.inputs.jsonl](datasets/da20k/test.inputs.jsonl) | [test.inputs.jsonl](datasets/xes3g5m/test.inputs.jsonl) |
+| 删字、调换字序后的同一批题目 | [test.noisy.inputs.jsonl](datasets/da20k/test.noisy.inputs.jsonl) | [test.noisy.inputs.jsonl](datasets/xes3g5m/test.noisy.inputs.jsonl) |
+| 可预测的知识点 ID 和名称 | [taxonomy.json](datasets/da20k/taxonomy.json) | [taxonomy.json](datasets/xes3g5m/taxonomy.json) |
+| 待填写的预测模板 | [predictions.template.jsonl](datasets/da20k/predictions.template.jsonl) | [predictions.template.jsonl](datasets/xes3g5m/predictions.template.jsonl) |
 
-`.jsonl` 表示“一行一条 JSON 记录”。例如，原始题目文件中的一行是：
+`.jsonl` 就是每行一条 JSON。例如题目文件中的一行：
 
 ```json
-{"qid":"1001","text":"解方程：3x+5=20。"}
+{"qid":"45289","text":"题干及必要的选项、公式文本"}
 ```
 
-对应的删字版本可能是下面这样，**题目 ID 保持一致**：
+`qid` 是题目 ID，`text` 是交给模型的内容。两个题目文件的 ID 相同，其中 `noisy` 版本用来检查输入有小错误时，预测是否稳定。
 
-```json
-{"qid":"1001","text":"解方程：3x+5=2。"}
-```
+需要训练模型时，同目录下的 `train.jsonl`、`valid.jsonl` 分别为训练集、验证集，含真实知识点标签。测试题的真实标签 `test.gold.jsonl` 只供评分使用，不传给预测模型。
 
-这里的 `data/test` 就是存放上述文件的普通目录。默认按 8:1:1 划分训练、验证、测试题；已有自己的划分时，按[原始数据说明](docs/prepare_data.md)指定，确保与已有预测一致。重复评测直接复用该目录；重新生成时需选择一个空目录。
+## 第三步：预测并保存两个结果文件
 
-## 第三步：用你的模型预测，保存两个结果文件
+用同一个模型和推理设置，分别对上一步的原始题目、删字调序后的题目预测。将结果放在仓库根目录：
 
-| 让模型读取 | 将模型预测保存为（放在仓库根目录） |
+| 预测哪份题目 | 保存的文件名 |
 | --- | --- |
-| `data/test/test.inputs.jsonl` 中的原始题目 | `predictions.jsonl` |
-| `data/test/test.noisy.inputs.jsonl` 中的删字、调换相邻字序题目 | `noisy_predictions.jsonl` |
+| `test.inputs.jsonl` | `predictions.jsonl` |
+| `test.noisy.inputs.jsonl` | `noisy_predictions.jsonl` |
 
-两次使用同一模型和推理设置。**上一步生成的是题目文件，这一步需要你提供的是预测结果文件。**
-
-两个预测文件都保存为 UTF-8 编码，每行一道题，格式如下（ID 仅作示意）：
+可复制所选数据集的预测模板，填入每题的预测知识点 ID。两个结果文件都保存为 UTF-8 编码，每行如下（标签 ID 仅作格式示意）：
 
 ```json
-{"qid":"1001","labels":["101","102"]}
-{"qid":"1002","labels":["103"]}
+{"qid":"45289","labels":["3","4"]}
 ```
 
-- `qid`：原题的 ID，所有测试题都要预测，每题只写一行。
-- `labels`：模型预测的一个或多个最细一级知识点 ID，从 `taxonomy.json` 中选择，填写 ID 而非名称或概率。
-- 两个文件的题目 ID 相同，各自填对应输入的实际预测。不得有空数组、重复标签或未知标签，行顺序不限。
+- 每题只写 `qid` 和 `labels`，必须包含全部测试题，每题一行，顺序不限。
+- `labels` 填 `taxonomy.json` 中一个或多个知识点 **ID**，不填名称或概率。
+- 不允许空预测、重复题目、重复标签或未知标签。
+- 两个结果文件各自填写对应题目输入的实际预测。
 
-已有预测结果时，按上述格式整理即可；题目 ID 和标签 ID 必须与第二步生成的数据一致。
+## 第四步：复制命令评分
 
-## 第四步：生成语义评分需要的文件
-
-这一步用于比较知识点含义是否接近。程序下载作业指定的语义模型，生成 `data/test/embeddings.json`，只需执行一次：
+**评测 DA-20K：**
 
 ```bash
-python -m pip install -e ".[semantic]"
-python -m kpt_test build-embeddings --taxonomy data/test/taxonomy.json --output data/test/embeddings.json
+python -m kpt_test evaluate --data-dir datasets/da20k --predictions predictions.jsonl --noisy-predictions noisy_predictions.jsonl --output outputs/da20k.report.json --details outputs/da20k.details.jsonl --require-complete
 ```
 
-默认模型为 `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`。已有对应的 `embeddings.json` 时跳过本步，后续评分可离线运行。
-
-## 第五步：运行评分，查看结果
-
-此时，两个预测文件在仓库根目录，其余生成的文件在 `data/test`。复制执行：
+**评测 XES3G5M：**
 
 ```bash
-python -m kpt_test evaluate --data-dir data/test --predictions predictions.jsonl --noisy-predictions noisy_predictions.jsonl --output outputs/report.json --details outputs/details.jsonl --require-complete
+python -m kpt_test evaluate --data-dir datasets/xes3g5m --predictions predictions.jsonl --noisy-predictions noisy_predictions.jsonl --output outputs/xes3g5m.report.json --details outputs/xes3g5m.details.jsonl --require-complete
 ```
 
-运行成功后，终端显示主要结果，并自动保存两个文件：
+选择与预测文件对应的命令即可，程序自动读取仓库内的真实标签及评分向量，并创建 `outputs` 目录。
 
-| 结果文件 | 内容 |
-| --- | --- |
-| `outputs/report.json` | 全部指标和是否达到作业准确率要求 |
-| `outputs/details.jsonl` | 每道题的预测标签、真实标签和得分 |
+## 第五步：查看结果
 
-终端里 `evaluation_complete: true` 表示所需评测材料齐全；`accuracy_thresholds_passed: true` 表示严格准确率 ≥ 90%、宽松准确率 ≥ 95%。例如 `strict_accuracy: 0.92` 就是严格准确率 92%。
+终端直接显示分数：
 
-报告还包含 Precision、Recall、Micro/Macro-F1、层级和语义 P/R/F1、交互容错性。Macro-F1 对全部末级标签平均；交互容错性为删字、调换相邻字序后的 Precision / 原始 Precision，原始 Precision 为 0 时返回 `null`。
+- `strict_accuracy`：严格准确率，要求 ≥ 0.90。
+- `loose_accuracy`：宽松准确率，要求 ≥ 0.95。
+- `accuracy_thresholds_passed: true`：上述两项准确率都达标。
+- `evaluation_complete: true`：全部评测所需材料齐全。
 
-想先确认能否运行，可直接使用[已准备好题目和预测的合成示例](examples/README.md)。
+`outputs/数据集名.report.json` 保存完整报告，包含 Precision、Recall、Micro/Macro-F1、层级和语义 P/R/F1、交互容错性；`outputs/数据集名.details.jsonl` 保存逐题预测、真实标签及得分。
+
+Macro-F1 对完整标签集合平均。交互容错性为扰动后 Precision / 原始 Precision，原始 Precision 为 0 时返回 `null`。
+
+## 仓库中的数据
+
+| 数据集 | 训练题 | 验证题 | 测试题 | 预测标签数 |
+| --- | ---: | ---: | ---: | ---: |
+| DA-20K 文本版 | 18,024 | 2,253 | 2,253 | 427 |
+| XES3G5M 文本版 | 6,121 | 765 | 766 | 865 |
+
+DA 来自提供的 `mathdata-main.zip`，按官方 427 标签范围保留 22,530 道题；XES 保留官方 7,652 道题。图片已移除，部分“如图”题目可能因此缺少信息。来源、筛选记录及纯文本限制见[数据说明](datasets/README.md)。
+
+只想先试跑，可使用[合成示例](examples/README.md)。重新生成数据的步骤见[数据重建说明](docs/prepare_data.md)。

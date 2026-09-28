@@ -1,111 +1,50 @@
-# 原始数据格式与题目划分
+# 数据重建说明
 
-本说明补充 [README](../README.md) 第二步所需的原始文件格式。`prepare` 命令读取这些文件，生成待预测的题目、真实知识点标签和评分所需信息，统一保存在 `data/test`。
+日常评测直接按 [README](../README.md) 使用 `datasets/da20k` 或 `datasets/xes3g5m`。这些目录已包含真实题目、固定划分和语义评分向量。
 
-先完成 README 第一步的代码下载与安装，以下命令均在仓库根目录执行。
+下面用于核对数据来源或重新生成文件，所需源数据也已保存在仓库中。
 
-## 1. 转换数据（二选一）
+## 1. 源文件位置
 
-默认按题目 ID 以 **8:1:1** 划分训练集、验证集和测试集，随机种子为 42。输出到 `data/test`，该目录须不存在或为空；对比不同模型时复用该目录。
+| 数据集 | 仓库中的实际文件 |
+| --- | --- |
+| DA 原始题目、完整知识树、题目标签关联表 | `datasets/sources/da20k/mathdata-main.zip` |
+| DA 官方 427 标签表 | `datasets/sources/da20k/DA-20k-labels-with-father.json` |
+| XES 原始题目元数据 | `datasets/sources/xes3g5m/questions.json` |
+| XES 知识点 ID 与名称映射 | `datasets/sources/xes3g5m/kc_routes_map.json` |
 
-### DA-20K
+DA 压缩包内真实文件名为 `math_questions_content.json`、`math_questions_knowledge.json`、`math_questions_knowledgetag.json`。重建程序直接读取 ZIP，无需手动解压或改名。
 
-#### 文件从哪里来
+## 2. 重建文本数据
 
-| 数据 | 来源 | 说明 |
-| --- | --- | --- |
-| 完整题目及真实知识点标签 | 官方仓库链接的 [DA-20K 原始数据](https://figshare.com/s/2be2eb2c06d00a9e4349) | 未随本仓库提供；下载包内的具体文件名和字段尚未核验 |
-| 知识点 ID、名称及父类 | 官方仓库的 [DA-20k-labels-with-father.json](https://github.com/xuqiang124/atmk_system/blob/master/DA-20k-labels-with-father.json) | 点击 Raw 后保存 JSON；这是已核验可读取的 427 个标签的元数据 |
-| 可试跑的合成题目 | 本仓库 [examples/raw/da20k.questions.json](../examples/raw/da20k.questions.json) | 文件实际存在，仅用于演示，不是完整 DA-20K 数据 |
-
-之前文档中的 `data/raw/da20k/questions.json`、`links.json`、`knowledge.json` 都是人为约定的示意路径，不代表官方下载包包含这些文件。`prepare` 只读取输入文件，不负责下载或创建它们。
-
-#### 使用自己的真实题目文件
-
-最简单的输入是一个 JSON 数组，每条记录同时包含题目 ID、题干和真实知识点 ID：
-
-```json
-[
-  {"id":1,"content":"题干文本","labels":[3,4]},
-  {"id":2,"content":"另一道题的题干文本","labels":[8]}
-]
-```
-
-以上内容是字段示例，实际填写真实数据。知识点 ID 必须与标签表一致。若已有文件符合这个格式，直接传入它的路径；否则需先按原始文件字段整理。当前没有通用的原始格式转换脚本，仅修改文件名不能完成格式转换。
-
-命令模板（将大写占位符替换为实际文件路径）：
+在仓库根目录执行，输出目录须不存在或为空：
 
 ```bash
-python -m kpt_test prepare --dataset da20k --questions "YOUR_QUESTIONS_JSON" --labels "YOUR_LABELS_JSON" --output-dir data/test
+python -m kpt_test.bundle --dataset da20k --output-dir outputs/rebuilt-da20k
+python -m kpt_test.bundle --dataset xes3g5m --output-dir outputs/rebuilt-xes3g5m
 ```
 
-`YOUR_QUESTIONS_JSON` 是上述题目 JSON；`YOUR_LABELS_JSON` 是已保存的官方 `DA-20k-labels-with-father.json`。
+重建程序执行文本清理、DA 标签范围筛选、XES 路径解析、固定 8:1:1 划分，以及删字调序题目生成；不会下载或读取图片。DA 的 MathML 公式转为 LaTeX 文本，分数、上下标、矩阵等结构保留。
 
-官方另有预处理版 `.h5` 和 `.pkl` 文件，它们不能直接传给这个 JSON 读取入口。来源见[官方数据说明](https://github.com/xuqiang124/atmk_system#dataset)。
+随机种子为 42。每个输出目录包含 `provenance.json`，列出源文件摘要、保留/排除题数及图片引用移除情况。DA 被排除的题目 ID 和被过滤的标签均有记录。具体规则见[数据说明](../datasets/README.md)。
 
-#### 已有题目与标签分表时
+原样重建后，直接将 `datasets/对应数据集/embeddings.json` 复制到新目录，即可离线评测。如果修改了知识点体系或路径，则需重新生成语义向量。
 
-也支持 SGPE 风格的三个 JSON 数组：
+## 3. 需要重新生成语义向量时
 
-| 命令参数 | 所需内容 | 最小记录示例 |
-| --- | --- | --- |
-| `--questions` | 题目 ID 与题干 | `{"id":1,"text_processed":"判断两个集合的关系。"}` |
-| `--links` | 题目 ID 与知识点 ID 的关联，一题可有多条 | `{"qid":1,"label_id":3}` |
-| `--labels` | 知识点 ID、名称及父节点关系 | `{"id":3,"name":"子集","uuid":"u3","parent_uuid":"u1"}` |
-
-每个 JSON 文件是上述记录的数组。知识点表需要包含父节点记录；根节点的 `parent_uuid` 为空字符串。
-
-```bash
-python -m kpt_test prepare --dataset da20k --questions "YOUR_QUESTIONS_JSON" --links "YOUR_LINKS_JSON" --labels "YOUR_KNOWLEDGE_JSON" --output-dir data/test
-```
-
-大写占位符分别替换为题目表、题目标签关联表和知识点表的真实路径。题目内嵌标签也接受 `label_ids` 字段。
-
-#### 只想先验证程序能运行
-
-下面的命令使用本仓库实际存在的合成数据，可以直接执行。输出到单独的演示目录，不作为真实数据实验：
-
-```bash
-python -m kpt_test prepare --dataset da20k --questions examples/raw/da20k.questions.json --links examples/raw/da20k.links.json --labels examples/raw/da20k.knowledge.json --splits examples/raw/splits.json --output-dir outputs/da20k-format-demo
-```
-
-### XES3G5M
-
-从[官方仓库的 Download 部分](https://github.com/ai4ed/XES3G5M)下载数据，使用题目元数据：
-
-- `metadata/questions.json`：题目 ID 到题目信息的映射，包含题干 `content` 和知识点路径 `kc_routes`。
-- `metadata/kc_routes_map.json`：知识点 ID 到知识点路径的映射。
-
-```bash
-python -m kpt_test prepare --dataset xes3g5m --questions data/raw/XES3G5M/metadata/questions.json --labels data/raw/XES3G5M/metadata/kc_routes_map.json --output-dir data/test
-```
-
-已有自己的题目划分时，在转换命令末尾加 `--splits splits.json`，文件格式如下。三个集合必须不重叠并覆盖全部输入题目，测试集不能为空：
-
-```json
-{"train":["1","2"],"valid":["3"],"test":["4","5"]}
-```
-
-## 2. 生成语义评分文件
-
-首次生成需安装额外依赖并联网下载模型：
+本仓库的向量由 `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` 生成，模型版本固定为 `e8f8c211226b894fcb81acc59f3b34ba3efd5f42`。
 
 ```bash
 python -m pip install -e ".[semantic]"
-python -m kpt_test build-embeddings --taxonomy data/test/taxonomy.json --output data/test/embeddings.json
+python -m kpt_test build-embeddings --taxonomy outputs/rebuilt-da20k/taxonomy.json --output outputs/rebuilt-da20k/embeddings.json --revision e8f8c211226b894fcb81acc59f3b34ba3efd5f42
 ```
 
-默认使用作业指定的 `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`。缓存生成一次即可，后续评测直接读取 `embeddings.json`。
+XES 将路径中的 `rebuilt-da20k` 改为 `rebuilt-xes3g5m`。这一步首次运行需要下载语义模型；使用仓库已有向量时不需要。
 
-## 3. 对测试题生成预测
+## 4. 验证
 
-现在 `data/test` 中已有待预测的题目和评分所需文件。用自己的模型分别读取：
+```bash
+python -m unittest discover -s tests -v
+```
 
-- `test.inputs.jsonl`：原始题目，预测保存为 `predictions.jsonl`。
-- `test.noisy.inputs.jsonl`：扰动题目，预测保存为 `noisy_predictions.jsonl`。
-
-两次推理使用同一模型和配置，预测格式见 [README](../README.md)。`test.gold.jsonl` 仅用于评分，不作为模型输入。其他文件保留原样。
-
-按 README 第三步保存预测结果，再执行第五步的评分命令。
-
-评估流程参考 [SGPE/scripts](https://github.com/Colentine/SGPE/tree/main/scripts)，指标按作业说明实现。转换参数可通过 `python -m kpt_test prepare --help` 查看。
+测试包含真实数据的文件校验、划分隔离、纯文本检查、XES 865 标签解析、MathML 转换以及离线评分。测试中用真实标签作为预测的用例仅验证评分程序，不代表任何模型的实际成绩。

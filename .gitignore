@@ -10,3 +10,4 @@ data/
 outputs/
 *.docx
 .env
+/mathdata-main.zip

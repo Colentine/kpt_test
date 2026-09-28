@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "dataset": "da20k",
+  "seed": 42,
+  "split_method": "sha256(seed:qid), 8:1:1",
+  "counts": {
+    "train": 18024,
+    "valid": 2253,
+    "test": 2253
+  },
+  "taxonomy_sha256": "eb2491470aae64249fefb3acfa9f038a29eba20eeb5a74fce43c457d883e0a73",
+  "source_sha256": "9af0bd1831270b29a6b4b7705c342cafb939e9c0953c4f18a883a7d93bd1cb87",
+  "noise": {
+    "protocol": "sgpe_character_delete_then_adjacent_swap_v1",
+    "seed": 42,
+    "drop_probability": 0.35,
+    "swap_probability": 0.35,
+    "changed_questions": 2253
+  },
+  "adapter": {
+    "duplicate_text_rows": 1,
+    "duplicate_text_groups": 1,
+    "ambiguous_text_groups": 1,
+    "source_questions": 22641,
+    "included_questions": 22530,
+    "excluded_questions": 111,
+    "exclusion_counts": {
+      "no_target_labels": 94,
+      "no_tags": 17
+    },
+    "target_vocabulary": "official_DA-20k_427_labels_with_father",
+    "questions_with_out_of_vocabulary_tags_removed": 116,
+    "questions_with_images_removed": 3860,
+    "text_preprocessing": "HTML_to_text_MathML_to_LaTeX_remove_images_and_footer_v1"
+  },
+  "files": {
+    "train.jsonl": "47ab2566a24eff83e3da86dd82f0748fbdde5acbfe11cbf71d91d762a2905213",
+    "valid.jsonl": "b79e72c0feb82a8cf9c6a4aedbf209faa8ae6134b249dcc806e29779c1220d3f",
+    "test.inputs.jsonl": "5295c1bee709a4f5d9a705b989dfd8f6c7525f697adb629b04e907ab46449772",
+    "test.gold.jsonl": "1776e5b1e5b69294d7a27acd376606631d1fc2b996c6fceac680314b27633452",
+    "test.noisy.inputs.jsonl": "827a6a13670efeb6076cf80e469f966ad6fdca5820b760a41526ba8f18bd28f0",
+    "predictions.template.jsonl": "9121f6625397d4d339e983215d1d1c10f46bc84e0593aee06c18ef8bd74a570e",
+    "taxonomy.json": "e424c7aedc2c5aca69895f54ddf4ea70916f60af6307d757d84acb0337eb6a17",
+    "splits.json": "143631c67f65d26f11900a99821f431b0538a2b11415dc016157b93f2c814195"
+  }
+}

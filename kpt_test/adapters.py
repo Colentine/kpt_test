@@ -145,6 +145,14 @@ def load_xes3g5m(questions_path, labels_path, separator=None):
     routes = read_json(labels_path)
     if not isinstance(routes, dict) or not routes:
         raise ValueError("kc_routes_map.json must map label IDs to textual routes")
+    # The official release maps IDs to individual node names (all 1,175 nodes),
+    # while questions contain full routes. Exports may instead map IDs to paths.
+    questions = question_rows(questions_path)
+    delimiter = separator or "----"
+    if all(isinstance(value, str) and delimiter not in value for value in routes.values()) and any(
+            isinstance(route, str) and delimiter in route
+            for row in questions for route in row.get("kc_routes", [])):
+        return load_xes_node_map(questions, routes, delimiter)
     route_to_id, names_to_ids, labels = {}, {}, []
     for raw_id, value in routes.items():
         kid = identifier(raw_id)
@@ -161,7 +169,7 @@ def load_xes3g5m(questions_path, labels_path, separator=None):
     internal_ids = {kid for route, kid in route_to_id.items() if route in internal_routes}
     taxonomy = Taxonomy({"dataset": "xes3g5m", "labels": [row for row in labels if row["id"] not in internal_ids]})
     examples, removed_ancestors = [], 0
-    for row in question_rows(questions_path):
+    for row in questions:
         qid = identifier(row.get("qid", row.get("id")))
         raw_routes = row.get("kc_routes")
         if not isinstance(raw_routes, list) or not raw_routes:
@@ -187,3 +195,44 @@ def load_xes3g5m(questions_path, labels_path, separator=None):
         examples.append({"qid": qid, "text": question_text(row), "labels": leaves})
     index_records(examples)
     return examples, taxonomy, {"removed_redundant_ancestor_tags": removed_ancestors}
+
+
+def load_xes_node_map(questions, node_map, separator=None):
+    name_to_id = {}
+    for raw_id, name in node_map.items():
+        kid = identifier(raw_id)
+        # Three official IDs differ only by leading/trailing spaces. Preserve
+        # exact source names, otherwise the 865-label vocabulary changes.
+        if name in name_to_id:
+            raise ValueError(f"Ambiguous XES node name: {name}")
+        name_to_id[name] = kid
+    label_routes, examples = {}, []
+    for row in questions:
+        qid = identifier(row.get("qid", row.get("id")))
+        raw_routes = row.get("kc_routes")
+        if not isinstance(raw_routes, list) or not raw_routes:
+            raise ValueError(f"Question {qid}: kc_routes must be a nonempty array")
+        labels = set()
+        for raw_route in raw_routes:
+            if isinstance(raw_route, str):
+                names = tuple(raw_route.split(separator or "----"))
+            elif isinstance(raw_route, list):
+                names = tuple(raw_route)
+            else:
+                raise ValueError(f"Question {qid}: invalid route")
+            try:
+                path = tuple(name_to_id[name] for name in names)
+            except KeyError as exc:
+                raise ValueError(f"Question {qid}: unmapped XES route node {exc.args[0]}") from exc
+            if len(set(path)) != len(path):
+                raise ValueError(f"Question {qid}: repeated node in route")
+            labels.add(path[-1])
+            label_routes.setdefault(path[-1], {})[path] = names
+        examples.append({"qid": qid, "text": question_text(row), "labels": sorted(labels)})
+    index_records(examples)
+    taxonomy = Taxonomy({"dataset": "xes3g5m", "target_policy": "route_endpoints", "labels": [
+        {"id": kid, "name": node_map[kid], "routes": [
+            {"path": list(path), "path_names": list(names)} for path, names in paths.items()]}
+        for kid, paths in label_routes.items()]})
+    return examples, taxonomy, {"target_policy": "route_endpoints", "source_nodes": len(node_map),
+                               "labels_with_multiple_routes": sum(len(paths) > 1 for paths in label_routes.values())}

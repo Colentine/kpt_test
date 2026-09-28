@@ -1,4 +1,4 @@
-"""Command-line interfaces for teachers and students."""
+"""Command-line interfaces for data preparation and evaluation."""
 
 import argparse
 import json
@@ -23,7 +23,7 @@ def dataset_name(value):
 def parser():
     root = argparse.ArgumentParser(description="知识点预测评测：DA-20K / XES3G5M")
     commands = root.add_subparsers(dest="command", required=True)
-    prepare = commands.add_parser("prepare", help="教师：转换数据、划分题目、生成扰动输入")
+    prepare = commands.add_parser("prepare", help="转换数据、划分题目、生成扰动输入")
     prepare.add_argument("--dataset", required=True, type=dataset_name)
     prepare.add_argument("--questions", required=True, help="DA questions JSON/JSONL or XES metadata/questions.json")
     prepare.add_argument("--labels", required=True, help="DA knowledge JSON or XES metadata/kc_routes_map.json")
@@ -34,13 +34,13 @@ def parser():
     prepare.add_argument("--drop-prob", type=float, default=0.35)
     prepare.add_argument("--swap-prob", type=float, default=0.35)
     prepare.add_argument("--output-dir", required=True)
-    embeddings = commands.add_parser("build-embeddings", help="教师：生成可离线分发的统一语义向量")
+    embeddings = commands.add_parser("build-embeddings", help="生成可离线使用的知识点语义向量")
     embeddings.add_argument("--taxonomy", required=True)
     embeddings.add_argument("--output", required=True)
     embeddings.add_argument("--model", default=DEFAULT_MODEL)
     embeddings.add_argument("--revision", help="Optional Hugging Face model commit SHA")
     embeddings.add_argument("--device", default="cpu")
-    evaluate = commands.add_parser("evaluate", help="学生：提交预测文件，输出评测报告")
+    evaluate = commands.add_parser("evaluate", help="读取预测文件，输出评测报告")
     evaluate.add_argument("--data-dir", required=True)
     evaluate.add_argument("--predictions", required=True)
     evaluate.add_argument("--noisy-predictions", help="Predictions on test.noisy.inputs.jsonl")

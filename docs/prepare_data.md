@@ -10,9 +10,42 @@
 
 ### DA-20K
 
-下载：[原始数据](https://figshare.com/s/2be2eb2c06d00a9e4349) · [官方仓库](https://github.com/xuqiang124/atmk_system)
+#### 文件从哪里来
 
-准备题目表、题目与标签关联表、知识点表，格式参考 [examples/raw](../examples/raw)，将命令中的路径替换为实际路径：
+| 数据 | 来源 | 说明 |
+| --- | --- | --- |
+| 完整题目及真实知识点标签 | 官方仓库链接的 [DA-20K 原始数据](https://figshare.com/s/2be2eb2c06d00a9e4349) | 未随本仓库提供；下载包内的具体文件名和字段尚未核验 |
+| 知识点 ID、名称及父类 | 官方仓库的 [DA-20k-labels-with-father.json](https://github.com/xuqiang124/atmk_system/blob/master/DA-20k-labels-with-father.json) | 点击 Raw 后保存 JSON；这是已核验可读取的 427 个标签的元数据 |
+| 可试跑的合成题目 | 本仓库 [examples/raw/da20k.questions.json](../examples/raw/da20k.questions.json) | 文件实际存在，仅用于演示，不是完整 DA-20K 数据 |
+
+之前文档中的 `data/raw/da20k/questions.json`、`links.json`、`knowledge.json` 都是人为约定的示意路径，不代表官方下载包包含这些文件。`prepare` 只读取输入文件，不负责下载或创建它们。
+
+#### 使用自己的真实题目文件
+
+最简单的输入是一个 JSON 数组，每条记录同时包含题目 ID、题干和真实知识点 ID：
+
+```json
+[
+  {"id":1,"content":"题干文本","labels":[3,4]},
+  {"id":2,"content":"另一道题的题干文本","labels":[8]}
+]
+```
+
+以上内容是字段示例，实际填写真实数据。知识点 ID 必须与标签表一致。若已有文件符合这个格式，直接传入它的路径；否则需先按原始文件字段整理。当前没有通用的原始格式转换脚本，仅修改文件名不能完成格式转换。
+
+命令模板（将大写占位符替换为实际文件路径）：
+
+```bash
+python -m kpt_test prepare --dataset da20k --questions "YOUR_QUESTIONS_JSON" --labels "YOUR_LABELS_JSON" --output-dir data/test
+```
+
+`YOUR_QUESTIONS_JSON` 是上述题目 JSON；`YOUR_LABELS_JSON` 是已保存的官方 `DA-20k-labels-with-father.json`。
+
+官方另有预处理版 `.h5` 和 `.pkl` 文件，它们不能直接传给这个 JSON 读取入口。来源见[官方数据说明](https://github.com/xuqiang124/atmk_system#dataset)。
+
+#### 已有题目与标签分表时
+
+也支持 SGPE 风格的三个 JSON 数组：
 
 | 命令参数 | 所需内容 | 最小记录示例 |
 | --- | --- | --- |
@@ -23,10 +56,18 @@
 每个 JSON 文件是上述记录的数组。知识点表需要包含父节点记录；根节点的 `parent_uuid` 为空字符串。
 
 ```bash
-python -m kpt_test prepare --dataset da20k --questions data/raw/da20k/questions.json --links data/raw/da20k/links.json --labels data/raw/da20k/knowledge.json --output-dir data/test
+python -m kpt_test prepare --dataset da20k --questions "YOUR_QUESTIONS_JSON" --links "YOUR_LINKS_JSON" --labels "YOUR_KNOWLEDGE_JSON" --output-dir data/test
 ```
 
-若题目已包含 `labels` 或 `label_ids` 数组，可省略 `--links`。`--labels` 也支持官方 `DA-20k-labels-with-father.json`。
+大写占位符分别替换为题目表、题目标签关联表和知识点表的真实路径。题目内嵌标签也接受 `label_ids` 字段。
+
+#### 只想先验证程序能运行
+
+下面的命令使用本仓库实际存在的合成数据，可以直接执行。输出到单独的演示目录，不作为真实数据实验：
+
+```bash
+python -m kpt_test prepare --dataset da20k --questions examples/raw/da20k.questions.json --links examples/raw/da20k.links.json --labels examples/raw/da20k.knowledge.json --splits examples/raw/splits.json --output-dir outputs/da20k-format-demo
+```
 
 ### XES3G5M
 

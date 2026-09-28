@@ -16,15 +16,25 @@ python -m pip install -e .
 
 ## 第二步：让程序生成待预测的题目
 
-下载原始数据后，选择对应数据集的命令执行一次。将命令中的文件路径替换为实际路径。
+选择对应数据集，先确认本机已有命令需要的输入文件。
 
-**DA-20K**：[数据下载](https://figshare.com/s/2be2eb2c06d00a9e4349)。输入题目表、题目与知识点的关联表、知识点表，格式见[原始数据说明](docs/prepare_data.md)。
+**DA-20K**：[数据下载](https://figshare.com/s/2be2eb2c06d00a9e4349) · [官方知识点标签表](https://github.com/xuqiang124/atmk_system/blob/master/DA-20k-labels-with-father.json)。
 
-```bash
-python -m kpt_test prepare --dataset da20k --questions data/raw/da20k/questions.json --links data/raw/da20k/links.json --labels data/raw/da20k/knowledge.json --output-dir data/test
+本仓库不包含完整 DA-20K 数据。原先说明中的 `data/raw/da20k/questions.json` 是示意路径，不是确认过的下载文件名，也不会由程序自动生成。当前支持的题目 JSON 格式为：
+
+```json
+[{"id":1,"content":"题干文本","labels":[3,4]}]
 ```
 
-**XES3G5M**：从[官方仓库](https://github.com/ai4ed/XES3G5M)下载数据，输入其中的两个元数据文件。
+请使用包含真实题目 ID、题干和知识点 ID 的文件；原始文件格式不一致时，需要先整理成上述格式。**原始下载包的结构尚未核验，目前没有提供从任意原始格式自动整理的脚本。** 具体来源、分表格式及可运行示例见[DA-20K 输入说明](docs/prepare_data.md#da-20k)。
+
+下面是命令模板，须将两个大写占位符替换为本机已有文件的路径：
+
+```bash
+python -m kpt_test prepare --dataset da20k --questions "YOUR_QUESTIONS_JSON" --labels "YOUR_LABELS_JSON" --output-dir data/test
+```
+
+**XES3G5M**：从[官方仓库](https://github.com/ai4ed/XES3G5M)下载并解压数据，将解压后的 `XES3G5M` 文件夹放到自己创建的 `data/raw` 目录中。下面两个 `metadata` 文件名来自官方说明：
 
 ```bash
 python -m kpt_test prepare --dataset xes3g5m --questions data/raw/XES3G5M/metadata/questions.json --labels data/raw/XES3G5M/metadata/kc_routes_map.json --output-dir data/test

@@ -10,7 +10,13 @@
 语义向量使用真实模型 `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` 生成，
 固定模型 revision：`e8f8c211226b894fcb81acc59f3b34ba3efd5f42`。评测只读缓存，不联网下载模型。
 
-在仓库根目录执行 README 中的快速体验命令。预期结果：
+安装依赖后，在仓库根目录复制以下命令，即可离线试跑完整评测：
+
+```bash
+python -m kpt_test evaluate --data-dir examples/da20k --predictions examples/da20k.predictions.jsonl --noisy-predictions examples/da20k.noisy.predictions.jsonl --output outputs/da20k.report.json --require-complete
+```
+
+将命令中的 `da20k` 全部替换为 `xes3g5m`，即可运行另一个示例。预期结果：
 
 | 指标 | 两个示例的结果 |
 | --- | ---: |
